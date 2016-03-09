@@ -4,12 +4,16 @@ defmodule NeuralNet.Helpers do
 
   @moduledoc "These helper functions provide a sort of DSL for specifying network architectures. Look at lib/gru.ex for an example implementation of the Gated Recurrent Unit architecture."
 
-  def set_size(size, vec_names) do
-    update! :size_defs, fn size_defs ->
-      Enum.reduce vec_names, size_defs, fn vec_name, size_defs ->
-        Map.put(size_defs, vec_name, size)
+  def def_vec(ids, vec_names) do
+    update! :vec_defs, fn vec_defs ->
+      Enum.reduce vec_names, vec_defs, fn vec_name, vec_defs ->
+        Map.put(vec_defs, vec_name, ids)
       end
     end
+  end
+
+  def def_vec_by_size(size, vec_names) do
+    def_vec(Enum.map(1..size, &uid/0), vec_names)
   end
 
   def mult(inputs, output) do

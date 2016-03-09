@@ -3,10 +3,10 @@ defmodule GRU do
   use NeuralNet
 
   defp define(args) do
-    set_size args.input_size, [
+    def_vec args.input_ids, [
       input, :input_gate, :gated_prev_out
     ]
-    set_size args.output_size, [
+    def_vec args.output_ids, [
       output, :update_gate, :forgetting_gate, :update_candidate, :gated_update, :purged_output
     ]
 
