@@ -31,6 +31,11 @@ defmodule NeuralNet.Helpers do
     add_operation(output, {:add, inputs})
   end
 
+  def add_const(inputs, const, output) do
+    link(inputs, output)
+    add_operation(output, {:add_const, inputs, const})
+  end
+
   def customNetLayer(activation_function, activation_function_prime, inputs, output) do
     link(inputs, output)
     add_net_layer(output, {{activation_function, activation_function_prime}, inputs})
