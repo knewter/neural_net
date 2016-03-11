@@ -14,19 +14,28 @@ defmodule NeuralNet.Constructor do
     end
   end
   def link(inputs, output) do
-    append_deps(output, inputs)
-    Enum.each(inputs, fn input -> append_affect(input, output) end)
-  end
-  def append_deps(id, new_deps) do
-    update! :deps, fn deps ->
-      its_deps = Map.get(deps, id, [])
-      Map.put(deps, id, new_deps ++ its_deps)
-    end
+    Enum.each(inputs, fn input ->
+      case input do
+        {:previous, vec} ->
+          append_root(input)
+          append_affect(vec, {:next, output})
+        :input ->
+          append_root(input)
+          append_affect(input, output)
+        _ ->
+          append_affect(input, output)
+      end
+    end)
   end
   def append_affect(id, new_affect) do
     update! :affects, fn affects ->
       its_affects = Map.get(affects, id, [])
       Map.put(affects, id, [new_affect | its_affects])
+    end
+  end
+  def append_root(root) do
+    update! :roots, fn roots ->
+      MapSet.put(roots, root)
     end
   end
 
