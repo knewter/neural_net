@@ -33,13 +33,9 @@ defmodule NeuralNet.Constructor do
   @doc "Returns the network with the randomly generated weight map."
   def gen_random_weight_map(net, weight_gen_fun \\ &gen_random_weight/0) do
     Map.put(net, :weight_map,
-      Enum.reduce(net.net_layers, %{}, fn {output, {{_, _}, inputs}}, weight_map -> #net layers are named by their output
+      Enum.reduce(net.net_layers, %{}, fn {output, {{:net_layer, _, _}, inputs}}, weight_map -> #net layers are named by their output
         Map.put(weight_map, output,
-          Enum.reduce(
-            Enum.flat_map(inputs, fn input ->
-              Enum.map(NeuralNet.get_vec_def(net, input), fn id -> {input, id} end)
-            end),
-          %{}, fn id, map ->
+          Enum.reduce(NeuralNet.get_weight_ids(net, output, inputs), %{}, fn id, map ->
             Map.put(map, id, weight_gen_fun.())
           end)
         )

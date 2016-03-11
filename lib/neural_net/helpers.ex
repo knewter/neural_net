@@ -21,9 +21,9 @@ defmodule NeuralNet.Helpers do
     add_operation(output, {:mult, inputs})
   end
 
-  def mult_const(inputs, const, output) do
+  def mult_const(inputs, const, output) do #only takes 1 input!
     link(inputs, output)
-    add_operation(output, {:mult_const, inputs, const})
+    add_operation(output, {{:mult_const, const}, inputs})
   end
 
   def add(inputs, output) do
@@ -31,22 +31,22 @@ defmodule NeuralNet.Helpers do
     add_operation(output, {:add, inputs})
   end
 
-  def add_const(inputs, const, output) do
+  def add_const(inputs, const, output) do #only takes 1 input!
     link(inputs, output)
-    add_operation(output, {:add_const, inputs, const})
+    add_operation(output, {{:add_const, const}, inputs})
   end
 
-  def customNetLayer(activation_function, activation_function_prime, inputs, output) do
+  def custom_net_layer(activation_function, activation_function_prime, inputs, output) do
     link(inputs, output)
-    add_net_layer(output, {{activation_function, activation_function_prime}, inputs})
+    add_net_layer(output, {{:net_layer, activation_function, activation_function_prime}, inputs})
   end
 
   def sigmoid(inputs, output) do
-    customNetLayer(&sigmoid/1, &sigmoid_prime/1, inputs, output)
+    custom_net_layer(&sigmoid/1, &sigmoid_prime/1, inputs, output)
   end
 
   def tanh(inputs, output) do
-    customNetLayer(&tanh/1, &tanh_prime/1, inputs, output)
+    custom_net_layer(&tanh/1, &tanh_prime/1, inputs, output)
   end
 
   def uid, do: :erlang.unique_integer([:monotonic])
