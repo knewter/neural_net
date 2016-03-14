@@ -38,7 +38,7 @@ defmodule GRUTest do
 
   test "GRU training", context do
     IO.puts "Generating training data..."
-    training_data = gen_training_data(context.gru, 100, 20)
+    training_data = gen_training_data(100, 20)
     NeuralNet.train(context.gru, training_data, 0.5, 2, fn info ->
       IO.puts info.error
       info.eval_time > 59 or info.error < 0.0001
@@ -54,7 +54,7 @@ defmodule GRUTest do
     end
   end
 
-  def gen_training_data(net, number_of_samples \\ 100, time_frames \\ 3) do
+  def gen_training_data(number_of_samples \\ 100, time_frames \\ 3) do
     net = gen_gru
     Enum.map 1..number_of_samples, fn _ ->
       inputs = gen_inputs(net, time_frames)

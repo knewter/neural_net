@@ -14,8 +14,8 @@ defmodule GRU do
     ]
 
     sigmoid [input, previous(output)], :update_gate
-    mult_const [:update_gate], -1, :negated_update_gate
-    add_const [:negated_update_gate], 1, :forgetting_gate
+    mult_const :update_gate, -1, :negated_update_gate
+    add_const :negated_update_gate, 1, :forgetting_gate
 
     sigmoid [input, previous(output)], :prev_out_gate
     mult [:prev_out_gate, previous(output)], :gated_prev_out

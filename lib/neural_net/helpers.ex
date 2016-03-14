@@ -1,6 +1,6 @@
 defmodule NeuralNet.Helpers do
   import NeuralNet.Constructor
-  import NeuralNet.ActivationFunctions
+  alias NeuralNet.ActivationFunctions
 
   @moduledoc "These helper functions provide a sort of DSL for specifying network architectures. Look at lib/gru.ex for an example implementation of the Gated Recurrent Unit architecture."
 
@@ -16,37 +16,37 @@ defmodule NeuralNet.Helpers do
     def_vec(Enum.map(1..size, &uid/0), vec_names)
   end
 
-  def mult(inputs, output) do
+  def mult(inputs, output \\ uid) do
     link(inputs, output)
     add_operation(output, {:mult, inputs})
   end
 
-  def mult_const(inputs, const, output) do #only takes 1 input!
-    link(inputs, output)
-    add_operation(output, {{:mult_const, const}, inputs})
+  def mult_const(input, const, output \\ uid) do #only takes 1 input!
+    link([input], output)
+    add_operation(output, {{:mult_const, const}, [input]})
   end
 
-  def add(inputs, output) do
+  def add(inputs, output \\ uid) do
     link(inputs, output)
     add_operation(output, {:add, inputs})
   end
 
-  def add_const(inputs, const, output) do #only takes 1 input!
-    link(inputs, output)
-    add_operation(output, {{:add_const, const}, inputs})
+  def add_const(input, const, output \\ uid) do #only takes 1 input!
+    link([input], output)
+    add_operation(output, {{:add_const, const}, [input]})
   end
 
-  def custom_net_layer(activation_function, activation_function_prime, inputs, output) do
+  def custom_net_layer(activation_function, activation_function_prime, inputs, output \\ uid) do
     link(inputs, output)
     add_net_layer(output, {{:net_layer, activation_function, activation_function_prime}, inputs})
   end
 
-  def sigmoid(inputs, output) do
-    custom_net_layer(&sigmoid/1, &sigmoid_prime/1, inputs, output)
+  def sigmoid(inputs, output \\ uid) do
+    custom_net_layer(&ActivationFunctions.sigmoid/1, &ActivationFunctions.sigmoid_prime/1, inputs, output)
   end
 
-  def tanh(inputs, output) do
-    custom_net_layer(&tanh/1, &tanh_prime/1, inputs, output)
+  def tanh(inputs, output \\ uid) do
+    custom_net_layer(&ActivationFunctions.tanh/1, &ActivationFunctions.tanh_prime/1, inputs, output)
   end
 
   def uid, do: :erlang.unique_integer([:monotonic])

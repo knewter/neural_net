@@ -12,6 +12,7 @@ defmodule NeuralNet.Constructor do
     update! type, fn map ->
       Map.put(map, id, data)
     end
+    id
   end
   def link(inputs, output) do
     Enum.each(inputs, fn input ->
