@@ -44,7 +44,7 @@ defmodule NeuralNet.Constructor do
     Map.put(net, :weight_map,
       Enum.reduce(net.net_layers, %{}, fn {output, {{:net_layer, _, _}, inputs}}, weight_map -> #net layers are named by their output
         Map.put(weight_map, output,
-          Enum.reduce(NeuralNet.get_weight_ids(net, output, inputs), %{}, fn id, map ->
+          Enum.reduce(NeuralNet.Constructor.get_weight_ids(net, output, inputs), %{}, fn id, map ->
             Map.put(map, id, weight_gen_fun.())
           end)
         )
@@ -54,5 +54,19 @@ defmodule NeuralNet.Constructor do
 
   def gen_random_weight do
     0.1 * (2*:rand.uniform - 1)
+  end
+
+  def get_weight_ids(net, output) do
+    {{:net_layer, _, _}, inputs} = Map.fetch!(net.net_layers, output)
+    get_weight_ids(net, output, inputs)
+  end
+  def get_weight_ids(net, output, inputs) do
+    Enum.flat_map(inputs, fn input ->
+      Enum.flat_map(NeuralNet.get_vec_def(net, input), fn input_component ->
+        Enum.map(NeuralNet.get_vec_def(net, output), fn output_component ->
+          {{input, input_component}, output_component}
+        end)
+      end)
+    end)
   end
 end
