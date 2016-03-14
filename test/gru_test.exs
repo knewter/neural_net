@@ -37,24 +37,27 @@ defmodule GRUTest do
   # end
 
   test "GRU training", context do
-    training_data = gen_training_data(1000, 100)
-    NeuralNet.train(context.gru, training_data, 2, 2, fn info ->
+    IO.puts "Generating training data..."
+    training_data = gen_training_data(context.gru, 100, 20)
+    NeuralNet.train(context.gru, training_data, 0.5, 2, fn info ->
       IO.puts info.error
-      info.eval_time > 60 or info.error < 0.00001
-    end, 0.1)
+      info.eval_time > 59 or info.error < 0.0001
+    end, 0.2)
     # IO.puts inspect(net)
   end
 
-  def gen_inputs(time_frames \\ 3) do
+  def gen_inputs(net, time_frames \\ 3) do
     Enum.map 1..time_frames, fn _ ->
-      %{x: :rand.uniform, y: :rand.uniform}
+      Enum.reduce(NeuralNet.get_vec_def(net, :input), %{}, fn component, acc ->
+        Map.put(acc, component, :rand.uniform)
+      end)
     end
   end
 
-  def gen_training_data(number_of_samples \\ 100, time_frames \\ 3) do
+  def gen_training_data(net, number_of_samples \\ 100, time_frames \\ 3) do
     net = gen_gru
     Enum.map 1..number_of_samples, fn _ ->
-      inputs = gen_inputs(time_frames)
+      inputs = gen_inputs(net, time_frames)
       {output, _} = NeuralNet.eval(net, inputs)
       {inputs, output}
     end
