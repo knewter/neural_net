@@ -78,6 +78,19 @@ defmodule NeuralNet.Backprop do
               end,
               fn -> 1 end
             }
+          :pointwise_tanh ->
+            {
+              fn ->
+                [input] = inputs
+                x = Map.fetch!(Map.fetch!(input_map, input), output_component)
+                ActivationFunctions.tanh(x)
+              end,
+              fn ->
+                [input] = inputs
+                x = Map.fetch!(Map.fetch!(input_map, input), output_component)
+                ActivationFunctions.tanh_prime(x)
+              end
+            }
           {:net_layer, activation_function, activation_function_prime} ->
             sum = Enum.reduce input_map, 0, fn {input_name, input_vals}, sum ->
               Enum.reduce(input_vals, sum, fn {input_component, val}, sum ->

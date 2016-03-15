@@ -43,6 +43,11 @@ defmodule NeuralNet.Helpers do
     add_operation(output, {{:add_const, const}, [input]})
   end
 
+  def pointwise_tanh(input, output \\ uid) do
+    link([input], output)
+    add_operation(output, {:pointwise_tanh, [input]})
+  end
+
   @doc "Network layers are train-able connections that take into account 1 or more input vectors in creating the values for an output vector. For a sigmoid network layer, vector components will have values from 0 to 1. For a tanh network layer, vector components will have values from -1 to 1. `custom_net_layer` allows for custom network layers using a provided `activation_function` (instead of tanh or a sigmoid). A function for caluclating the derivative at any value x must also be supplied as `activation_function_prime`."
   def custom_net_layer(activation_function, activation_function_prime, inputs, output \\ uid) do
     link(inputs, output)

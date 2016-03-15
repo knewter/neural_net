@@ -2,7 +2,7 @@ defmodule NeuralNet.Constructor do
   @moduledoc "Contains the nuts and bolts for constructing the network in the process dictionary. These are use by the functions in NeuralNetHelpers."
 
   defp key, do: :network_defs
-  def put_neural_net(data), do: Process.put(key, data)
+  def put_neural_net(net), do: Process.put(key, net)
   def get_neural_net(), do: Process.get(key, %NeuralNet{})
   def update!(fun), do: put_neural_net(fun.(get_neural_net))
   def update!(key, fun), do: update!(fn net -> Map.update!(net, key, fun) end)
