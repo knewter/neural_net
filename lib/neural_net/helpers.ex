@@ -7,9 +7,20 @@ defmodule NeuralNet.Helpers do
   The functions `mult`, `mult_const`, `add`, `add_const`, `custom_net_layer`, `sigmoid`, and `tanh`, all take input(s), and create a resulting output vector. A random uid will be generated and returned, for use as reference. A custom uid, for keeping track of neural network vectors (other than :input and :output) beyond the construction phase of the neural network, can be provided as the final argument.
   """
 
-  def def_vec(ids, vec_names) do
+  def def_vec(vec_name, ids) do
+    net = NeuralNet.Constructor.get_neural_net()
+    vec_names = Enum.find net.vec_groupings, fn group -> MapSet.member?(group, vec_name) end
+    if vec_names == nil, do: raise "Vector #{inspect(vec_name)} was never used during construction."
     update! :vec_defs, fn vec_defs ->
       Enum.reduce vec_names, vec_defs, fn vec_name, vec_defs ->
+        if Map.has_key?(vec_defs, vec_name) do
+          conflicting_def = Map.get(vec_defs, vec_name)
+          if conflicting_def != ids do
+            raise "Vector #{inspect(vec_name)} has conflicting definition of #{inspect(ids)} and #{inspect(conflicting_def)}.\nThe list of vector groupings that must share the same definitions are as follows: #{inspect(net.vec_groupings)}"
+          else
+            raise "Vector #{inspect(vec_name)} was already defined through association, additional specification is not needed."
+          end
+        end
         Map.put(vec_defs, vec_name, ids)
       end
     end

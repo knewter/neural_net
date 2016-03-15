@@ -5,7 +5,7 @@ defmodule NeuralNet do
   A vector-across-time is a list of input vectors across time. Index 1 is the beginning of time. Index 0 is the moment just before the start of time. This is where initial values for vectors that are used recurrently will be stored.
   """
 
-  defstruct vec_defs: %{}, affects: %{}, roots: MapSet.new, operations: %{}, net_layers: %{}, weight_map: %{}
+  defstruct vec_defs: %{}, vec_groupings: [], affects: %{}, roots: MapSet.new, operations: %{}, net_layers: %{}, weight_map: %{}
 
   alias NeuralNet.Backprop
 
@@ -15,8 +15,11 @@ defmodule NeuralNet do
 
       def new(args) do
         define(args)
-        NeuralNet.Constructor.get_neural_net #retrieves constructed network from the Process dictionary
+        net = NeuralNet.Constructor.get_neural_net #retrieves constructed network from the Process dictionary
+        |> NeuralNet.Constructor.confirm_groupings_defined()
         |> NeuralNet.Constructor.gen_random_weight_map()
+        NeuralNet.Constructor.put_neural_net(%NeuralNet{})
+        net
       end
     end
   end
@@ -87,9 +90,11 @@ defmodule NeuralNet do
   #
   # end
 
-  def get_vec_def(net, {:previous, vec}), do: get_vec_def(net, vec)
   @doc "Retrieves the list of the named components that make up the given vector."
-  def get_vec_def(net, vec), do: Map.fetch!(net.vec_defs, vec)
+  def get_vec_def(net, vec), do: Map.fetch!(net.vec_defs, deconstruct(vec))
+
+  def deconstruct({:previous, vec}), do: vec
+  def deconstruct(vec), do: vec
 
   defp monotonic_time do
     :erlang.monotonic_time(:milli_seconds) / 1000

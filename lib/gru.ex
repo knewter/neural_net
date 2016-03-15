@@ -3,16 +3,6 @@ defmodule GRU do
   use NeuralNet
 
   defp define(args) do
-    def_vec args.input_ids, [
-      input
-    ]
-    def_vec args.output_ids, [
-      :update_gate, :negated_update_gate, :forgetting_gate,
-      :prev_out_gate, :gated_prev_out, :update_candidate,
-      :gated_update,
-      :purged_output, output
-    ]
-
     sigmoid [input, previous(output)], :update_gate
     mult_const :update_gate, -1, :negated_update_gate
     add_const :negated_update_gate, 1, :forgetting_gate
@@ -25,5 +15,8 @@ defmodule GRU do
 
     mult [previous(output), :forgetting_gate], :purged_output
     add [:purged_output, :gated_update], output
+
+    def_vec(input, args.input_ids)
+    def_vec(output, args.output_ids)
   end
 end

@@ -6,14 +6,35 @@ defmodule NeuralNet.Constructor do
   def get_neural_net(), do: Process.get(key, %NeuralNet{})
   def update!(fun), do: put_neural_net(fun.(get_neural_net))
   def update!(key, fun), do: update!(fn net -> Map.update!(net, key, fun) end)
-  def add_operation(id, data), do: add_component(:operations, id, data)
-  def add_net_layer(id, data), do: add_component(:net_layers, id, data)
+
+  def add_operation(id, data={_, inputs}) do
+    add_vec_grouping([id | inputs])
+    add_component(:operations, id, data)
+  end
+  def add_net_layer(id, data={_, inputs}) do
+    Enum.each [id | inputs], fn vec -> add_vec_grouping([vec]) end
+    add_component(:net_layers, id, data)
+  end
   def add_component(type, id, data) do
     update! type, fn map ->
       Map.put(map, id, data)
     end
     id
   end
+
+  def add_vec_grouping(new_group_list) do
+    new_group = Enum.reduce new_group_list, MapSet.new, fn vec, set -> MapSet.put(set, NeuralNet.deconstruct(vec)) end
+    {matching_groups, remaining_groups} = Enum.partition get_neural_net().vec_groupings, fn group ->
+      !MapSet.disjoint?(group, new_group)
+    end
+    super_group = Enum.reduce [new_group | matching_groups], MapSet.new, fn group, super_group ->
+      MapSet.union(super_group, group)
+    end
+    update! :vec_groupings, fn _ ->
+      [super_group | remaining_groups]
+    end
+  end
+
   def link(inputs, output) do
     Enum.each(inputs, fn input ->
       case input do
@@ -38,6 +59,16 @@ defmodule NeuralNet.Constructor do
     update! :roots, fn roots ->
       MapSet.put(roots, root)
     end
+  end
+
+  def confirm_groupings_defined(net) do
+    vec_defs = net.vec_defs
+    Enum.each net.vec_groupings, fn group ->
+      if !Map.has_key?(vec_defs, Enum.at(group, 0)) do
+        raise "The following group of vectors lacks a definition for its components: #{inspect(group)}"
+      end
+    end
+    net
   end
 
   @doc "Returns the network with the randomly generated weight map."
