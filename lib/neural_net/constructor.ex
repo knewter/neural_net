@@ -85,7 +85,7 @@ defmodule NeuralNet.Constructor do
   end
 
   def gen_random_weight do
-    0.1 * (2*:rand.uniform - 1)
+    0.2 * (:rand.uniform - 0.5)
   end
 
   def get_weight_ids(net, output) do

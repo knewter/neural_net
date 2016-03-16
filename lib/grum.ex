@@ -1,5 +1,5 @@
 defmodule GRUM do
-  @moduledoc "GRU (Gated Recurrent Unit) is a variation on LSTM (Long short term :memory). It is, for the most part, equally effective but computationally cheaper."
+  @moduledoc "GRUM is an experimental modification to GRUs. It has a dedicated memory that can be set to any arbitrary size using `memory_size`."
   use NeuralNet
 
   def template(inp, out) do
