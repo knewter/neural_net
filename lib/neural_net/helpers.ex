@@ -26,8 +26,8 @@ defmodule NeuralNet.Helpers do
     end
   end
 
-  def def_vec_by_size(size, vec_names) do
-    def_vec(Enum.map(1..size, &uid/0), vec_names)
+  def def_vec_by_size(vec_name, size) do
+    def_vec(vec_name, Enum.map(1..size, fn _ -> uid() end))
   end
 
   @doc "Multiplies together the corresponding components from each of the input vectors."

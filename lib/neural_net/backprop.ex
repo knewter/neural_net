@@ -6,6 +6,15 @@ defmodule NeuralNet.Backprop do
       feedforward = %{values: input_frame}
       %{input: (if calc_partial_derivs, do: Map.put(feedforward, :partial_derivs, %{}), else: feedforward)}
     end)
+    acc = if calc_partial_derivs do
+      #make sure outputs from every time frame are calculated
+      Enum.reduce 1..length(input), acc, fn time, acc ->
+        {_, acc} = get_feedforward(net, calc_partial_derivs, acc, time, :output)
+        acc
+      end
+    else
+      acc
+    end
     get_feedforward(net, calc_partial_derivs, acc, length(input), :output)
   end
   def get_feedforward(net, calc_partial_derivs, acc, time = 0, vec) do
@@ -132,25 +141,39 @@ defmodule NeuralNet.Backprop do
   end
   def get_backprop(net, acc, time, {:previous, vec}), do: get_backprop(net, acc, time - 1, vec)
   def get_backprop(net, acc, time, {:next, vec}), do: get_backprop(net, acc, time + 1, vec)
+  def get_backprop(net, acc, time, vec) when time >= length(acc) or time == 0 do
+    {backprops, values} = Enum.reduce(Map.fetch!(net.vec_defs, vec), {%{}, %{}}, fn component, {backprops, values} ->
+      {
+        Map.put(backprops, component, 0),
+        Map.put(values, component, 0)
+      }
+    end)
+    vec_acc_data = %{backprops: backprops, values: values}
+    {vec_acc_data.backprops, update_acc(acc, time, vec, vec_acc_data)}
+  end
   def get_backprop(net, acc, time, vec) do
     vec_acc_data = Map.fetch!(Enum.at(acc, time), vec)
     if Map.has_key? vec_acc_data, :backprops do
       {vec_acc_data.backprops, acc}
     else
-      affects = Map.fetch!(net.affects, vec)
+      affects = Map.get(net.affects, vec)
       {backprop_error, acc} = Enum.reduce(Map.fetch!(net.vec_defs, vec), {%{}, acc}, fn component, {backprop_error, acc} ->
-        {sum, acc} = Enum.reduce(affects, {0, acc}, fn affected, {sum, acc} ->
-          {affected_backprops, acc} = get_backprop(net, acc, time, affected)
-          addon = if Enum.member?(Map.keys(net.net_layers), affected) do
-            Enum.reduce(Map.fetch!(net.vec_defs, affected), 0, fn affected_component, sum ->
-              sum + Map.fetch!(affected_backprops, affected_component) * Map.fetch!(Map.fetch!(net.weight_map, affected), {{vec, component}, affected_component})
-            end)
-          else
-            backprop_component = Map.fetch!(affected_backprops, component)
-            if is_number(backprop_component), do: backprop_component, else: Map.fetch!(backprop_component, vec)
-          end
-          {sum + addon, acc}
-        end)
+        {sum, acc} = if affects != nil do
+          Enum.reduce(affects, {0, acc}, fn affected, {sum, acc} ->
+            {affected_backprops, acc} = get_backprop(net, acc, time, affected)
+            addon = if Enum.member?(Map.keys(net.net_layers), affected) do
+              Enum.reduce(Map.fetch!(net.vec_defs, affected), 0, fn affected_component, sum ->
+                sum + Map.fetch!(affected_backprops, affected_component) * Map.fetch!(Map.fetch!(net.weight_map, affected), {{vec, component}, affected_component})
+              end)
+            else
+              backprop_component = Map.fetch!(affected_backprops, component)
+              if is_number(backprop_component), do: backprop_component, else: Map.fetch!(backprop_component, vec)
+            end
+            {sum + addon, acc}
+          end)
+        else
+          {0, acc}
+        end
         {Map.put(backprop_error, component, sum), acc}
       end)
       vec_acc_data = apply_backprop(vec_acc_data, backprop_error)
