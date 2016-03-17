@@ -1,6 +1,8 @@
 defmodule NeuralNet.Backprop do
   @moduledoc "This module provides the code that generates the feedforward and backprop data used for training. The feedforward can also be used for normal network evaluation in which only the minimum computation required for evaluation is executed."
 
+  alias NeuralNet.ActivationFunctions
+
   def get_feedforward(net, input, given_acc \\ [%{}], calc_partial_derivs \\ true) do
     acc = given_acc ++ Enum.map(input, fn input_frame ->
       feedforward = %{values: input_frame}
@@ -45,7 +47,7 @@ defmodule NeuralNet.Backprop do
         {values_fun, partial_derivs_fun} = case vec_specs do
           :mult ->
             product = Enum.reduce(input_map, 1, fn {_input_name, input_vals}, product ->
-              product * Dict.fetch!(input_vals, output_component)
+              product * Map.fetch!(input_vals, output_component)
             end)
             {
               fn -> product end,
@@ -98,6 +100,32 @@ defmodule NeuralNet.Backprop do
                 [input] = inputs
                 x = Map.fetch!(Map.fetch!(input_map, input), output_component)
                 ActivationFunctions.tanh_prime(x)
+              end
+            }
+          {:tanh_given_weights, weight_vec, actual_inputs} ->
+            weight_vals = Map.fetch!(input_map, weight_vec)
+            sum = Enum.reduce(actual_inputs, 0, fn input_name, sum ->
+              Enum.reduce(Map.fetch!(input_map, input_name), sum, fn {input_component, component_val}, sum ->
+                weight = Map.fetch!(weight_vals, {{input_name, input_component}, output_component})
+                sum + component_val * weight
+              end)
+            end)
+            {
+              fn -> ActivationFunctions.tanh(sum) end,
+              fn ->
+                partial_derivs_map = Enum.reduce(actual_inputs, %{}, fn input_name, partial_derivs_map ->
+                  Enum.reduce(Map.fetch!(input_map, input_name), partial_derivs_map, fn {input_component, _component_val}, partial_derivs_map ->
+                    weight_val = Map.fetch!(weight_vals, {{input_name, input_component}, output_component})
+                    Map.put(partial_derivs_map, {NeuralNet.deconstruct(input_name), input_component}, weight_val * ActivationFunctions.tanh_prime(sum))
+                  end)
+                end)
+                Enum.reduce(Map.fetch!(input_map, weight_vec), partial_derivs_map, fn
+                 {weight_component={{input_name, input_component}, ^output_component}, _weight_val}, partial_derivs_map ->
+                  input_val = Map.fetch!(Map.fetch!(input_map, input_name), input_component)
+                  Map.put(partial_derivs_map, {NeuralNet.deconstruct(weight_vec), weight_component}, input_val * ActivationFunctions.tanh_prime(sum))
+                  {{{_, _}, _}, _}, partial_derivs_map ->
+                    partial_derivs_map
+                end)
               end
             }
           {:net_layer, activation_function, activation_function_prime} ->
@@ -160,14 +188,34 @@ defmodule NeuralNet.Backprop do
       {backprop_error, acc} = Enum.reduce(Map.fetch!(net.vec_defs, vec), {%{}, acc}, fn component, {backprop_error, acc} ->
         {sum, acc} = if affects != nil do
           Enum.reduce(affects, {0, acc}, fn affected, {sum, acc} ->
+            dec_affected = NeuralNet.deconstruct(affected)
+            {affected_specs, _} = Map.fetch!(Map.merge(net.operations, net.net_layers), dec_affected)
             {affected_backprops, acc} = get_backprop(net, acc, time, affected)
-            addon = if Enum.member?(Map.keys(net.net_layers), affected) do
-              Enum.reduce(Map.fetch!(net.vec_defs, affected), 0, fn affected_component, sum ->
-                sum + Map.fetch!(affected_backprops, affected_component) * Map.fetch!(Map.fetch!(net.weight_map, affected), {{vec, component}, affected_component})
-              end)
-            else
-              backprop_component = Map.fetch!(affected_backprops, component)
-              if is_number(backprop_component), do: backprop_component, else: Map.fetch!(backprop_component, vec)
+            addon = case affected_specs do
+              {:net_layer, _, _} ->
+                Enum.reduce(Map.fetch!(net.vec_defs, dec_affected), 0, fn affected_component, sum ->
+                  con_vec = case affected do
+                    {:next, aff} -> {:previous, vec}
+                    _ -> vec
+                  end
+                  sum + Map.fetch!(affected_backprops, affected_component) * Map.fetch!(Map.fetch!(net.weight_map, dec_affected), {{con_vec, component}, affected_component})
+                end)
+              {:tanh_given_weights, weight_vec, actual_inputs} ->
+                if weight_vec == vec do
+                  {_source, affected_component} = component
+                  Map.fetch!(Map.fetch!(affected_backprops, affected_component), {vec, component})
+                else
+                  Enum.reduce(Map.fetch!(net.vec_defs, dec_affected), 0, fn affected_component, sum ->
+                    sum + Map.fetch!(Map.fetch!(affected_backprops, affected_component), {vec, component})
+                  end)
+                end
+              _ ->
+                backprop_component = Map.fetch!(affected_backprops, component)
+                if is_number(backprop_component) do
+                  backprop_component
+                else
+                  Map.fetch!(backprop_component, vec)
+                end
             end
             {sum + addon, acc}
           end)

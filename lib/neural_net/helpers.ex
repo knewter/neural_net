@@ -9,7 +9,7 @@ defmodule NeuralNet.Helpers do
 
   def def_vec(vec_name, ids) do
     net = NeuralNet.Constructor.get_neural_net()
-    vec_names = Enum.find net.vec_groupings, fn group -> MapSet.member?(group, vec_name) end
+    vec_names = Enum.find Map.get(net.construction_data, :vec_groupings, []), fn group -> MapSet.member?(group, vec_name) end
     if vec_names == nil, do: raise "Vector #{inspect(vec_name)} was never used during construction."
     update! :vec_defs, fn vec_defs ->
       Enum.reduce vec_names, vec_defs, fn vec_name, vec_defs ->
@@ -73,6 +73,11 @@ defmodule NeuralNet.Helpers do
   @doc "A tanh network layer. The output vector's components will have values between -1 and 1."
   def tanh(inputs, output \\ uid) do
     custom_net_layer(&ActivationFunctions.tanh/1, &ActivationFunctions.tanh_prime/1, inputs, output)
+  end
+
+  def tanh_given_weights(inputs, weight_vec, output \\ uid) do
+    link([weight_vec | inputs], output)
+    add_special(output, {{:tanh_given_weights, weight_vec, inputs}, [weight_vec | inputs]})
   end
 
   @doc "Generates a uid (using `:erlang.unique_integer([:monotonic])`)."

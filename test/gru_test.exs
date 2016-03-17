@@ -37,7 +37,7 @@ defmodule GRUTest do
   # end
 
   test "GRU training", context do
-    IO.puts "Trainig GRU"
+    IO.puts "Training GRU"
     test_training(context.gru, gen_gru, 100, 10, 0.5, 2, 0.2)
   end
 
