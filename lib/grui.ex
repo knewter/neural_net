@@ -1,16 +1,16 @@
 defmodule GRUI do
   use NeuralNet
 
-  def template(inp, out) do
+  def template(inp, out \\ uid) do
     update_gate = sigmoid [inp, previous(out)]
     negated_update_gate = mult_const update_gate, -1
     forgetting_gate = add_const negated_update_gate, 1
 
-    GRU.template(inp, :content_weights)
+    content_weights = GRU.template(inp)
 
     prev_out_gate = sigmoid [inp, previous(out)]
     gated_prev_out = mult [prev_out_gate, previous(out)]
-    update_candidate = tanh_given_weights [inp, gated_prev_out], :content_weights
+    update_candidate = tanh_given_weights [inp, gated_prev_out], content_weights
 
     gated_update = mult [update_candidate, update_gate]
 

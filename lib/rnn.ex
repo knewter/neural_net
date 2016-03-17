@@ -2,7 +2,7 @@ defmodule RNN do
   @moduledoc "The classic simple recurrent neural network."
   use NeuralNet
 
-  def template(inp, out) do
+  def template(inp, out \\ uid) do
     tanh [inp, previous(out)], out
   end
 
