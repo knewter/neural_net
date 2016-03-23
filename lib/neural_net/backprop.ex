@@ -195,12 +195,12 @@ defmodule NeuralNet.Backprop do
               {:net_layer, _, _} ->
                 Enum.reduce(Map.fetch!(net.vec_defs, dec_affected), 0, fn affected_component, sum ->
                   con_vec = case affected do
-                    {:next, aff} -> {:previous, vec}
+                    {:next, _aff} -> {:previous, vec}
                     _ -> vec
                   end
                   sum + Map.fetch!(affected_backprops, affected_component) * Map.fetch!(Map.fetch!(net.weight_map, dec_affected), {{con_vec, component}, affected_component})
                 end)
-              {:tanh_given_weights, weight_vec, actual_inputs} ->
+              {:tanh_given_weights, weight_vec, _actual_inputs} ->
                 if weight_vec == vec do
                   {_source, affected_component} = component
                   Map.fetch!(Map.fetch!(affected_backprops, affected_component), {vec, component})
