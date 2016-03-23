@@ -9,6 +9,6 @@ defmodule LSTMTest do
 
   test "LSTM training", context do
     IO.puts "Training LSTM"
-    GRUTest.test_training(context.lstm, gen_lstm, 100, 10, 1.5, 2, 0.2)
+    TrainingTester.test_training(context.lstm, gen_lstm, 100, 10, 1.5, 2, 0.2)
   end
 end

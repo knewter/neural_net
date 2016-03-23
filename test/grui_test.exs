@@ -9,6 +9,6 @@ defmodule GRUITest do
 
   test "GRUI training", context do
     IO.puts "Training GRUI"
-    GRUTest.test_training(context.grui, gen_grui, 100, 10, 5.5, 2, 0.2)
+    TrainingTester.test_training(context.grui, gen_grui, 100, 10, 5.5, 2, 0.2)
   end
 end
