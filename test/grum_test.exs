@@ -9,6 +9,6 @@ defmodule GRUMTest do
 
   test "GRUM training", context do
     IO.puts "Training GRUM"
-    TrainingTester.test_training(context.grum, gen_grum, 100, 10, 1.5, 2, 0.2)
+    NeuralNet.Tester.test_training(context.grum, gen_grum, 100, 10, 1.5, 2, 0.2)
   end
 end

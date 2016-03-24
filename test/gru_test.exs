@@ -38,6 +38,6 @@ defmodule GRUTest do
 
   test "GRU training", context do
     IO.puts "Training GRU"
-    TrainingTester.test_training(context.gru, gen_gru, 100, 10, 0.5, 2, 0.2)
+    NeuralNet.Tester.test_training(context.gru, gen_gru, 100, 10, 0.5, 2, 0.2)
   end
 end

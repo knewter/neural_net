@@ -1,22 +1,16 @@
 defmodule Mix.Tasks.Stats do
   use Mix.Task
 
-  def args, do: %{input_ids: [:x, :y], output_ids: [:a, :b, :c, :d]}
-  def gen(module), do: module.new(args())
+  def default_args(), do: %{input_ids: [:x, :y], output_ids: [:a, :b, :c, :d]}
 
-  def get_iterations(module, learn_val) do
-    to_train = gen(module)
-    role_model = gen(module)
-    {_, info} = TrainingTester.test_training(to_train, role_model, 100, 100, learn_val, 2, 0, false)
-    info.eval_time
+  def get_data(module, learn_val, args) do
+    to_train = module.new(args)
+    role_model = module.new(args)
+    {_, info} = NeuralNet.Tester.test_training(to_train, role_model, 100, 10, learn_val, 2, 0, false)
+    {info.eval_time, info.iterations}
   end
 
-  def run(_) do
-    data = Enum.map 1..40, fn num ->
-      IO.puts "Collecting data sample ##{num}."
-      learn_val = 0.1 + :random.uniform*1.9
-      get_iterations(GRU, learn_val) - get_iterations(LSTM, learn_val)
-    end
+  def perform_statistics(str, data) do
     n = length(data)
     mean = Enum.reduce data, 0, fn diff, mean ->
       mean + (diff / n)
@@ -26,6 +20,24 @@ defmodule Mix.Tasks.Stats do
     end
     sd = :math.sqrt(variance)
 
-    IO.puts "Mean: #{mean}, SD: #{sd}, N: #{n}"
+    digits = 5
+    IO.puts "#{str} | Mean: #{Float.round(mean, digits)}, SD: #{Float.round(sd, digits)}, N: #{n}"
+  end
+
+  def compare(module1, module2, args1 \\ default_args(), args2 \\ default_args(), sample_size \\ 40) do
+    {time_data, its_data} = Enum.reduce 1..sample_size, {[], []}, fn num, {time_data, its_data} ->
+      IO.write "\rCollecting data sample #{num}/#{sample_size}"
+      learn_val = 0.3 + :random.uniform*3.7
+      {time1, iterations1} = get_data(module1, learn_val, args1)
+      {time2, iterations2} = get_data(module2, learn_val, args2)
+      {[time1 - time2 | time_data], [iterations1 - iterations2 | its_data]}
+    end
+    IO.puts ""
+    perform_statistics("Time      ", time_data)
+    perform_statistics("Iterations", its_data)
+  end
+
+  def run(_) do
+    compare(LSTM, GRU)
   end
 end

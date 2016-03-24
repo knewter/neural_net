@@ -1,4 +1,4 @@
-defmodule TrainingTester do
+defmodule NeuralNet.Tester do
 
   def test_training(net, desired_net, number_of_samples, time_frames, learn_val, batch_size, freq, verbose \\ true) do
     training_data = gen_training_data(desired_net, number_of_samples, time_frames)

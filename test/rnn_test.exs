@@ -9,6 +9,6 @@ defmodule RNNTest do
 
   test "RNN training", _context do
     # IO.puts "Training RNN"
-    # TrainingTester.test_training(context.rnn, gen_rnn, 100, 4, 1.5, 2, 0.2)
+    # NeuralNet.Tester.test_training(context.rnn, gen_rnn, 100, 4, 1.5, 2, 0.2)
   end
 end
