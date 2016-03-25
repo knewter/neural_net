@@ -154,13 +154,25 @@ defmodule NeuralNet.Backprop do
     end
   end
 
-  def get_backprop(net, input, exp_output) do
-    {output, acc} = get_feedforward(net, input)
+  def inject_intial_error(acc, time, exp_output) do
+    output = Enum.at(acc, time).output
     {backprop_error, error_sum} = Enum.reduce(output.values, {%{}, 0}, fn {component, value}, {acc, error_sum} ->
       difference = value - Map.fetch!(exp_output, component)
       {Map.put(acc, component, difference), error_sum + (0.5 * :math.pow(difference, 2))}
     end)
-    acc = update_acc(acc, -1, :output, apply_backprop(output, backprop_error))
+    {update_acc(acc, time, :output, Map.put(output, :initial_error, backprop_error)), error_sum}
+  end
+  def get_backprop(net, input, exp_outputs) do
+    {_output, acc} = get_feedforward(net, input)
+    {acc, error_sum} = if is_list(exp_outputs) do
+      if length(exp_outputs) != length(acc) - 1, do: raise "Length of `exp_output` list should be #{length(acc) - 1}, but instead got #{length(exp_outputs)}"
+      Enum.reduce Enum.with_index(exp_outputs), {acc, 0}, fn {exp_output, time}, {acc, error_sum} ->
+        {acc, its_error} = inject_intial_error(acc, time+1, exp_output)
+        {acc, error_sum + its_error}
+      end
+    else
+      inject_intial_error(acc, -1, exp_outputs)
+    end
     acc = Enum.reduce(net.roots, acc, fn root, acc ->
       {_, acc} = get_backprop(net, acc, 1, root)
       acc
@@ -186,41 +198,50 @@ defmodule NeuralNet.Backprop do
     else
       affects = Map.get(net.affects, vec)
       {backprop_error, acc} = Enum.reduce(Map.fetch!(net.vec_defs, vec), {%{}, acc}, fn component, {backprop_error, acc} ->
-        {sum, acc} = if affects != nil do
-          Enum.reduce(affects, {0, acc}, fn affected, {sum, acc} ->
-            dec_affected = NeuralNet.deconstruct(affected)
-            {affected_specs, _} = Map.fetch!(Map.merge(net.operations, net.net_layers), dec_affected)
-            {affected_backprops, acc} = get_backprop(net, acc, time, affected)
-            addon = case affected_specs do
-              {:net_layer, _, _} ->
-                Enum.reduce(Map.fetch!(net.vec_defs, dec_affected), 0, fn affected_component, sum ->
-                  con_vec = case affected do
-                    {:next, _aff} -> {:previous, vec}
-                    _ -> vec
-                  end
-                  sum + Map.fetch!(affected_backprops, affected_component) * Map.fetch!(Map.fetch!(net.weight_map, dec_affected), {{con_vec, component}, affected_component})
-                end)
-              {:tanh_given_weights, weight_vec, _actual_inputs} ->
-                if weight_vec == vec do
-                  {_source, affected_component} = component
-                  Map.fetch!(Map.fetch!(affected_backprops, affected_component), {vec, component})
-                else
-                  Enum.reduce(Map.fetch!(net.vec_defs, dec_affected), 0, fn affected_component, sum ->
-                    sum + Map.fetch!(Map.fetch!(affected_backprops, affected_component), {vec, component})
-                  end)
-                end
-              _ ->
-                backprop_component = Map.fetch!(affected_backprops, component)
-                if is_number(backprop_component) do
-                  backprop_component
-                else
-                  Map.fetch!(backprop_component, vec)
-                end
+        {sum, acc} = cond do
+          affects != nil ->
+            intial_error = if Map.has_key?(vec_acc_data, :initial_error) do
+              Map.fetch!(vec_acc_data.initial_error, component)
+            else
+              if vec == :output, do: raise "Output doesnt have initial_error... #{inspect(vec_acc_data)}"
+              0
             end
-            {sum + addon, acc}
-          end)
-        else
-          {0, acc}
+            Enum.reduce(affects, {intial_error, acc}, fn affected, {sum, acc} ->
+              dec_affected = NeuralNet.deconstruct(affected)
+              {affected_specs, _} = Map.fetch!(Map.merge(net.operations, net.net_layers), dec_affected)
+              {affected_backprops, acc} = get_backprop(net, acc, time, affected)
+              addon = case affected_specs do
+                {:net_layer, _, _} ->
+                  Enum.reduce(Map.fetch!(net.vec_defs, dec_affected), 0, fn affected_component, sum ->
+                    con_vec = case affected do
+                      {:next, _aff} -> {:previous, vec}
+                      _ -> vec
+                    end
+                    sum + Map.fetch!(affected_backprops, affected_component) * Map.fetch!(Map.fetch!(net.weight_map, dec_affected), {{con_vec, component}, affected_component})
+                  end)
+                {:tanh_given_weights, weight_vec, _actual_inputs} ->
+                  if weight_vec == vec do
+                    {_source, affected_component} = component
+                    Map.fetch!(Map.fetch!(affected_backprops, affected_component), {vec, component})
+                  else
+                    Enum.reduce(Map.fetch!(net.vec_defs, dec_affected), 0, fn affected_component, sum ->
+                      sum + Map.fetch!(Map.fetch!(affected_backprops, affected_component), {vec, component})
+                    end)
+                  end
+                _ ->
+                  backprop_component = Map.fetch!(affected_backprops, component)
+                  if is_number(backprop_component) do
+                    backprop_component
+                  else
+                    Map.fetch!(backprop_component, vec)
+                  end
+              end
+              {sum + addon, acc}
+            end)
+          Map.has_key?(vec_acc_data, :initial_error) ->
+            {Map.fetch!(vec_acc_data.initial_error, component), acc}
+          # :else ->
+          #   {0, acc}
         end
         {Map.put(backprop_error, component, sum), acc}
       end)
