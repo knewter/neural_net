@@ -10,14 +10,14 @@ defmodule NeuralNet.Backprop do
     end)
     acc = if calc_partial_derivs do
       #make sure outputs from every time frame are calculated
-      Enum.reduce 1..length(input), acc, fn time, acc ->
+      Enum.reduce 1..(length(acc)-1), acc, fn time, acc ->
         {_, acc} = get_feedforward(net, calc_partial_derivs, acc, time, :output)
         acc
       end
     else
       acc
     end
-    get_feedforward(net, calc_partial_derivs, acc, length(input), :output)
+    get_feedforward(net, calc_partial_derivs, acc, length(acc)-1, :output)
   end
   def get_feedforward(net, calc_partial_derivs, acc, time = 0, vec) do
     feedforward = %{values:

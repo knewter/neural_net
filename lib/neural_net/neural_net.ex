@@ -58,7 +58,7 @@ defmodule NeuralNet do
         end)
         {error_sum, train_val_map}
       end)
-    end) |> Enum.map(&Task.await/1)
+    end) |> Enum.map(fn task -> Task.await(task, 24*60*60*1000) end)
 
     {avg_error, weight_map} = Enum.reduce batch, {0, net.weight_map}, fn {error_sum, train_val_map}, {avg_error, weight_map} ->
       {
@@ -76,7 +76,8 @@ defmodule NeuralNet do
     info = %{
       eval_time: (time - start_time),
       error: avg_error,
-      iterations: iterations
+      iterations: iterations,
+      net: net
     }
     if (time - last_check >= completion_checking_interval) do
       if training_complete?.(info) do
