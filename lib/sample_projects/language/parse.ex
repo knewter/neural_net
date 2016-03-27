@@ -7,7 +7,7 @@ defmodule SampleProjects.Language.Parse do
     matches = Regex.scan(~r/(?<=^|\. )[A-Z][a-z]+(?: [A-Za-z;:,"]+)+(?=\.|!)/, text)
     sentences = Enum.map(matches, fn [m] ->
       s = Regex.replace(~r/(?!\a)\s+/, m, " ")
-      s = Regex.replace(~r/(?:^ |[;:,\.])/, s, "")
+      s = Regex.replace(~r/(?:^ |[;:,\."])/, s, "")
       Regex.split(~r/ /, String.downcase(s))
     end)
     {

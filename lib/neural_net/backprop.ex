@@ -8,13 +8,9 @@ defmodule NeuralNet.Backprop do
       feedforward = %{values: input_frame}
       %{input: (if calc_partial_derivs, do: Map.put(feedforward, :partial_derivs, %{}), else: feedforward)}
     end)
-    acc = if calc_partial_derivs do
-      #make sure outputs from every time frame are calculated
-      Enum.reduce 1..(length(acc)-1), acc, fn time, acc ->
-        {_, acc} = get_feedforward(net, calc_partial_derivs, acc, time, :output)
-        acc
-      end
-    else
+    #make sure outputs from every time frame are calculated
+    acc = Enum.reduce 1..(length(acc)-2), acc, fn time, acc ->
+      {_, acc} = get_feedforward(net, calc_partial_derivs, acc, time, :output)
       acc
     end
     get_feedforward(net, calc_partial_derivs, acc, length(acc)-1, :output)

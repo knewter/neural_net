@@ -104,4 +104,14 @@ defmodule NeuralNet do
   defp monotonic_time do
     :erlang.monotonic_time(:milli_seconds) / 1000
   end
+
+  def get_max_component(vec) do
+    {comp, _val} = Enum.max_by(vec, fn {_comp, val} -> val end)
+    comp
+  end
+  def get_blank_vector(components) do
+    Enum.reduce components, %{}, fn component, vec ->
+      Map.put(vec, component, 0)
+    end
+  end
 end

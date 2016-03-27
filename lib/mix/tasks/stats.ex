@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Stats do
   use Mix.Task
 
-  def default_args(), do: %{input_ids: [:x, :y], output_ids: [:a, :b, :c, :d]}
+  def default_args(), do: %{input_ids: [:x, :y], output_ids: [:a, :b, :c, :d], memory_size: 3}
 
   def get_data(module, learn_val, args) do
     to_train = module.new(args)
@@ -26,8 +26,8 @@ defmodule Mix.Tasks.Stats do
 
   def compare(module1, module2, args1 \\ default_args(), args2 \\ default_args(), sample_size \\ 40) do
     {time_data, its_data} = Enum.reduce 1..sample_size, {[], []}, fn num, {time_data, its_data} ->
-      IO.write "\rCollecting data sample #{num}/#{sample_size}"
-      learn_val = 0.3 + :random.uniform*3.7
+      learn_val = 0.5 + :random.uniform*2.5
+      IO.write "\rCollecting data sample #{num}/#{sample_size} with learn_val #{learn_val}"
       {time1, iterations1} = get_data(module1, learn_val, args1)
       {time2, iterations2} = get_data(module2, learn_val, args2)
       {[time1 - time2 | time_data], [iterations1 - iterations2 | its_data]}
@@ -38,6 +38,6 @@ defmodule Mix.Tasks.Stats do
   end
 
   def run(_) do
-    compare(LSTM, GRU)
+    compare(GRU, GRUM)
   end
 end
