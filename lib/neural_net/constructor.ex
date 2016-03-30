@@ -1,5 +1,5 @@
 defmodule NeuralNet.Constructor do
-  @moduledoc "Contains the nuts and bolts for constructing the network in the process dictionary. These are use by the functions in NeuralNetHelpers."
+  @moduledoc "Contains the nuts and bolts for constructing the network in the process dictionary. These functions are use by the NeuralNet.Helpers module."
 
   defp key, do: :network_defs
   def put_neural_net(net), do: Process.put(key, net)

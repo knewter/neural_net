@@ -1,8 +1,14 @@
 defmodule NeuralNet do
   @moduledoc """
-  This module allows you to define and train neural networks with complex architectures. See lib/gru.ex for an example implementation of the Gated Recurrent Unit architecture.
+  This module allows you to define and train neural networks with complex architectures. See lib/gru.ex for an example implementation of the Gated Recurrent Unit architecture. For making a new architecture, use the template at lib/.template.ex. Just copy the file and change the module name to get started.
 
-  A vector-across-time is a list of input vectors across time. Index 1 is the beginning of time. Index 0 is the moment just before the start of time. This is where initial values for vectors that are used recurrently will be stored.
+  For a great post on LSTMs, GRUs, and other recurrent neural network architectures, see here: http://colah.github.io/posts/2015-08-Understanding-LSTMs/.
+
+  This module of course allows for the creation of non recurrent neural networks as well. An architecture that makes no reference to vectors from previous time frames is not recurrent.
+
+  Networks are evaluated and trained using "vectors across time". A vector-across-time is a list of time_frames, where each element is a vector, which is a map of {component_name, value} key-val-pairs.
+  ### Example
+      [%{x: 1.0, y: -1.0}, %{x: 0.5, -0.5}, %{x: 0.0, y: 0.0}]
   """
 
   defstruct vec_defs: %{}, construction_data: %{}, affects: %{}, roots: MapSet.new, operations: %{}, net_layers: %{}, weight_map: %{}
@@ -26,13 +32,13 @@ defmodule NeuralNet do
     end
   end
 
-  @doc "Evaluates a network. The input should be a vector-across-time. The function returns a {output_values, acc} tuple. The acc holds all the data for the networks state across its time frames of execution. If you want to continue evaluation with more inputs, run the eval function again passing in the acc as the given_acc."
-  def eval(net, input, given_acc \\ [%{}]) do
-    {output_data, acc} = Backprop.get_feedforward(net, input, given_acc, false)
+  @doc "Evaluates a network. The input should be a vector-across-time. The function returns a {output_values, time_frames} tuple. `time_frames` holds all the data for the networks state across its time frames of execution. If you want to continue evaluation with more inputs, run the eval function again passing in the previous data as `given_time_frames`."
+  def eval(net, input, given_time_frames \\ [%{}]) do
+    {output_data, acc} = Backprop.get_feedforward(net, input, false, given_time_frames)
     {output_data.values, acc}
   end
 
-  @doc "train uses backpropogation to train any neural_net. `training_data` should be a list of {inputs, expected_output} tuples, where `inputs` is a vector-across-time. `expected_output` can be either a vector representing final expected output, or it can be a list of expected outputs for every time frame. `learn_val` should be a positive constant which controls the effect of each batch. Higher values can cause faster learning, but also may have trouble finding a minimum error. `batch_size` specifies the number of training pairs to be run in parallel. The results of the batch are averaged together. Small batch sizes of 1-3 tend to work best. The `training_complete?` should return true when training should be stopped. The time (in seconds) between each call to `training_complete?` is specified by the argument `completion_checking_interval`."
+  @doc "`train` uses backpropogation to train any neural_net. `training_data` should be a list of {inputs, expected_output} tuples, where `inputs` is a vector-across-time. `expected_output` can be either a vector representing final expected output, or it can be a list of expected outputs for every time frame. `learn_val` should be a positive constant which controls the effect of each batch. Higher values can cause faster learning, but also may introduce trouble finding a minimum error. `batch_size` specifies the number of training pairs to be run in parallel. At each training iteration, `batch_size` number of training sessions run in parallel, and the results are averaged together. Small batch sizes of 1-3 tend to work best. The `training_complete?(info)` function should take 1 argument of miscellaneous info, and return true when training should be stopped. This function can also be used for debugging or monitoring, and can print out information at regular intervals. The time (in seconds) between each call to `training_complete?(info)` is specified by the argument `completion_checking_interval`."
   def train(net, training_data, learn_val \\ 2, batch_size \\ 1, training_complete? \\ fn info -> info.eval_time > 60 end, completion_checking_interval \\ 1) do
     train(net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, monotonic_time() - completion_checking_interval, monotonic_time(), 1)
   end
@@ -97,6 +103,7 @@ defmodule NeuralNet do
   @doc "Retrieves the list of the named components that make up the given vector."
   def get_vec_def(net, vec), do: Map.fetch!(net.vec_defs, deconstruct(vec))
 
+  @doc "Breaks down a vector name into its core name. When given `{:next, vec}` or `{:previous, vec}`, it will just return `vec.` :next and :previous are used in the fashion to keep track of references to vectors from future or past time frames."
   def deconstruct({:next, vec}), do: vec
   def deconstruct({:previous, vec}), do: vec
   def deconstruct(vec), do: vec
@@ -105,13 +112,16 @@ defmodule NeuralNet do
     :erlang.monotonic_time(:milli_seconds) / 1000
   end
 
+  @doc "Given a vector, returns the component name with the greatest value."
   def get_max_component(vec) do
     {comp, _val} = Enum.max_by(vec, fn {_comp, val} -> val end)
     comp
   end
-  def get_blank_vector(components) do
+
+  @doc "Given a list of component names for a vector, returns a complete vector where each component has value `value` (default is 0)."
+  def get_blank_vector(components, value \\ 0) do
     Enum.reduce components, %{}, fn component, vec ->
-      Map.put(vec, component, 0)
+      Map.put(vec, component, value)
     end
   end
 end

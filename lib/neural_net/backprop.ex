@@ -1,10 +1,31 @@
 defmodule NeuralNet.Backprop do
-  @moduledoc "This module provides the code that generates the feedforward and backprop data used for training. The feedforward can also be used for normal network evaluation in which only the minimum computation required for evaluation is executed."
+  @moduledoc """
+  This module provides the code that generates the feedforward and backprop data used for training. `get_feedforward` can also be used for normal network evaluation, and is used by `NeuralNet.eval`.
+  `get_feedforward` returns {output, time_frames}, where output is vector_data.
+  `get_backprop` returns {error_sum, time_frames}.
+
+  vector_data is a map that at its largest contains the keys :values, :partial_derivs, and :backprops. At its smallest, for instance when the network is simply evaluated, with no intention of perfomring backpropogation, it contains only :values. When `get_feedforward` is evaluated, each vector_data gets its :values term populated with evaluation data, in the form of a map with {component_name, value} key-val-pairs. If `calc_partial_derivs` is true, :partial_derivs also get filled in. This data is later used for backpropogation. When `get_backprop` is run, the :backprops keys get filled in with their corresponding data.
+
+  `time_frames` is a list returned by both `get_feedforward` and `get_backprop`. Index 1 is the real "beginning of time" (index 0 stores some initial values for vectors used recurrently). Each time_frame is a map of {vector_name, vector_data} key-val-pairs.
+
+  ### Example
+      iex> get_feedforward(net, input, false)
+      {
+        %{values: %{a: 1.0, b: -0.5, c: -0.6}},
+        [
+          %{},
+          %{input: %{values: %{x: 1.0, y: 0.5}}, output: %{values: %{a: 0.5, b: 0.0, c: -0.9}},
+          %{input: %{values: %{x: 0.2, y: -0.6}}, output: %{values: %{a: 0.7, b: -0.3, c: -0.7}},
+          %{input: %{values: %{x: 0.7, y: -0.9}}, output: %{values: %{a: 1.0, b: -0.5, c: -0.6}}
+        ]
+      }
+  """
 
   alias NeuralNet.ActivationFunctions
 
-  def get_feedforward(net, input, given_acc \\ [%{}], calc_partial_derivs \\ true) do
-    acc = given_acc ++ Enum.map(input, fn input_frame ->
+  @doc "Retrieves feedforward data given a network and an input vector-across-time. Returns {output, time_frames}. For info on a `vector-across-time`, see the `NeuralNet` module doc. For info on the return value, see the above module doc. If `calc_partial_derivs` is false, :partial_derivs data is not calculated."
+  def get_feedforward(net, input, calc_partial_derivs \\ true, given_time_frames \\ [%{}]) do
+    acc = given_time_frames ++ Enum.map(input, fn input_frame ->
       feedforward = %{values: input_frame}
       %{input: (if calc_partial_derivs, do: Map.put(feedforward, :partial_derivs, %{}), else: feedforward)}
     end)
@@ -15,7 +36,7 @@ defmodule NeuralNet.Backprop do
     end
     get_feedforward(net, calc_partial_derivs, acc, length(acc)-1, :output)
   end
-  def get_feedforward(net, calc_partial_derivs, acc, time = 0, vec) do
+  defp get_feedforward(net, calc_partial_derivs, acc, time = 0, vec) do
     feedforward = %{values:
       Enum.reduce(Map.fetch!(net.vec_defs, vec), %{}, fn id, map ->
         Map.put(map, id, 0)
@@ -24,10 +45,10 @@ defmodule NeuralNet.Backprop do
     feedforward = if calc_partial_derivs, do: Map.put(feedforward, :partial_derivs, feedforward.values), else: feedforward
     {feedforward, update_acc(acc, time, vec, feedforward)}
   end
-  def get_feedforward(net, calc_partial_derivs, acc, time, {:previous, vec}) do
+  defp get_feedforward(net, calc_partial_derivs, acc, time, {:previous, vec}) do
     get_feedforward(net, calc_partial_derivs, acc, time - 1, vec)
   end
-  def get_feedforward(net, calc_partial_derivs, acc, time, vec) do
+  defp get_feedforward(net, calc_partial_derivs, acc, time, vec) do
     time_frame = Enum.at(acc, time)
     if Map.has_key? time_frame, vec do
       {Map.fetch!(time_frame, vec), acc}
@@ -150,7 +171,7 @@ defmodule NeuralNet.Backprop do
     end
   end
 
-  def inject_intial_error(acc, time, exp_output) do
+  defp inject_intial_error(acc, time, exp_output) do
     output = Enum.at(acc, time).output
     {backprop_error, error_sum} = Enum.reduce(output.values, {%{}, 0}, fn {component, value}, {acc, error_sum} ->
       difference = value - Map.fetch!(exp_output, component)
@@ -158,6 +179,7 @@ defmodule NeuralNet.Backprop do
     end)
     {update_acc(acc, time, :output, Map.put(output, :initial_error, backprop_error)), error_sum}
   end
+  @doc "Retrieves backprop data given a network, an input vector-across-time, and `exp_outputs`. `exp_outputs` can either be a vector-across-time, or it can just be a single vector, which would be the expected output for the final time frame. Returns {error_sum, time_frames}. For info on a `vector-across-time`, see the `NeuralNet` module doc. For info on what `time_frames` is, see the above module doc."
   def get_backprop(net, input, exp_outputs) do
     {_output, acc} = get_feedforward(net, input)
     {acc, error_sum} = if is_list(exp_outputs) do
@@ -175,9 +197,9 @@ defmodule NeuralNet.Backprop do
     end)
     {error_sum, acc}
   end
-  def get_backprop(net, acc, time, {:previous, vec}), do: get_backprop(net, acc, time - 1, vec)
-  def get_backprop(net, acc, time, {:next, vec}), do: get_backprop(net, acc, time + 1, vec)
-  def get_backprop(net, acc, time, vec) when time >= length(acc) or time == 0 do
+  defp get_backprop(net, acc, time, {:previous, vec}), do: get_backprop(net, acc, time - 1, vec)
+  defp get_backprop(net, acc, time, {:next, vec}), do: get_backprop(net, acc, time + 1, vec)
+  defp get_backprop(net, acc, time, vec) when time >= length(acc) or time == 0 do
     {backprops, values} = Enum.reduce(Map.fetch!(net.vec_defs, vec), {%{}, %{}}, fn component, {backprops, values} ->
       {
         Map.put(backprops, component, 0),
@@ -187,7 +209,7 @@ defmodule NeuralNet.Backprop do
     vec_acc_data = %{backprops: backprops, values: values}
     {vec_acc_data.backprops, update_acc(acc, time, vec, vec_acc_data)}
   end
-  def get_backprop(net, acc, time, vec) do
+  defp get_backprop(net, acc, time, vec) do
     vec_acc_data = Map.fetch!(Enum.at(acc, time), vec)
     if Map.has_key? vec_acc_data, :backprops do
       {vec_acc_data.backprops, acc}
@@ -246,8 +268,8 @@ defmodule NeuralNet.Backprop do
     end
   end
 
-  @doc "Multiplies in the transmitted backprop with the partial derivatives of this node."
-  def apply_backprop(vec_acc_data, backprop_error) do
+  #Multiplies in the transmitted backprop with the partial derivatives of this node.
+  defp apply_backprop(vec_acc_data, backprop_error) do
     Map.put(vec_acc_data, :backprops,
       Enum.reduce(vec_acc_data.partial_derivs, %{}, fn {component, partial_deriv}, backprops ->
         backprop_component = if is_number(partial_deriv) do
@@ -262,14 +284,15 @@ defmodule NeuralNet.Backprop do
     )
   end
 
-  def update_acc(acc, time, vec, value) do
+  defp update_acc(acc, time, vec, value) do
     List.update_at acc, time, fn time_frame ->
       Map.put(time_frame, vec, value)
     end
   end
 
   def fetch!(acc, time, {:previous, vec}), do: fetch!(acc, time - 1, vec)
-  def fetch!(acc, time, vec) when time >= 0 do
-    Map.fetch!(Enum.at(acc, time), vec)
+  @doc "Fetches `vector_data` from `time_frames` at time `time`, at vector `vec`."
+  def fetch!(time_frames, time, vec) when time >= 0 do
+    Map.fetch!(Enum.at(time_frames, time), vec)
   end
 end
