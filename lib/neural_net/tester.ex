@@ -19,7 +19,7 @@ defmodule NeuralNet.Tester do
   def gen_training_data(net, number_of_samples \\ 100, time_frames \\ 3, test_only_final_output \\ true) do
     Enum.map 1..number_of_samples, fn _ ->
       inputs = gen_inputs(net, time_frames)
-      output = if test_only_final_output do
+      output = if !test_only_final_output do
         {_, acc} = NeuralNet.Backprop.get_feedforward(net, inputs)
         Enum.map(tl(acc), fn time_frame ->
           time_frame.output.values

@@ -221,7 +221,6 @@ defmodule NeuralNet.Backprop do
             intial_error = if Map.has_key?(vec_acc_data, :initial_error) do
               Map.fetch!(vec_acc_data.initial_error, component)
             else
-              if vec == :output, do: raise "Output doesnt have initial_error... #{inspect(vec_acc_data)}"
               0
             end
             Enum.reduce(affects, {intial_error, acc}, fn affected, {sum, acc} ->
@@ -258,8 +257,8 @@ defmodule NeuralNet.Backprop do
             end)
           Map.has_key?(vec_acc_data, :initial_error) ->
             {Map.fetch!(vec_acc_data.initial_error, component), acc}
-          # :else ->
-          #   {0, acc}
+          :else ->
+            {0, acc}
         end
         {Map.put(backprop_error, component, sum), acc}
       end)
