@@ -1,4 +1,5 @@
 defmodule Mix.Tasks.SentenceComplete do
+  @moduledoc false
   use Mix.Task
 
   def run(_) do

@@ -1,14 +1,22 @@
 # NeuralNet
 
-NeuralNet allows for the construction and training of complex recurrent neural networks. Architectures such as LSTM or GRU can be specified in under 20 lines of code. Any neural network that can be built with the NeuralNet DSL can be trainined with automatically implemented BPTT (back-propagation through time).
+NeuralNet is an A.I. library that allows for the construction and training of complex recurrent neural networks. Architectures such as LSTM or GRU can be specified in under 20 lines of code. Any neural network that can be built with the NeuralNet DSL can be trainined with automatically implemented BPTT (back-propagation through time).
+
+An excellent article on LSTMs and GRUs can be found here: http://colah.github.io/posts/2015-08-Understanding-LSTMs/.
+
+If you have any feedback or feature requests, please don't hesitate to contact me at onnoowl@gmail.com.
 
 ## Installation
 
-Add neural_nets to your list of dependencies in `mix.exs`:
+Add neural_net to your list of dependencies in `mix.exs`:
 
     def deps do
       [{:neural_net, "~> 1.0"}]
     end
+
+## Documentation
+
+For details, the latest documentation can be found at http://hexdocs.pm/neural_net/index.html. For example usage, see below.
 
 ## Simple RNN
 

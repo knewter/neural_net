@@ -1,5 +1,7 @@
 defmodule GRU do
-  @moduledoc "GRU (Gated Recurrent Unit) is a variation on LSTM (Long short term memory). It is, for the most part, equally effective but computationally cheaper."
+  @moduledoc "GRU (Gated Recurrent Unit) is a variation on LSTM (Long short term memory). It is, for the most part, equally effective but computationally cheaper. An article explaining LSTMs and GRUs can be found here: http://colah.github.io/posts/2015-08-Understanding-LSTMs/."
+
+  @doc "Takes an argument map with the keys :input_ids and :output_ids. Both values should be a list of component/id names for the input and output vectors (respectively)."
   use NeuralNet
 
   def template(inp, out \\ uid) do

@@ -1,4 +1,7 @@
 defmodule GRUMI do
+  @moduledoc false
+  # @moduledoc "GRUMI is an experimental neural network design in development."
+
   use NeuralNet
 
   def template(inp, out \\ uid) do

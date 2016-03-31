@@ -1,4 +1,5 @@
 defmodule SampleProjects.Language.Parse do
+  @moduledoc false
   def parse(path) do
     {:ok, text} = File.read path
     # matches = Regex.scan(~r/(?:^|\s{2,})[A-Z][a-z]+\s[A-Za-z\s\-\$;:,]+\./, text)

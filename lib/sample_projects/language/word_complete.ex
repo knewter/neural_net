@@ -1,4 +1,5 @@
 defmodule SampleProjects.Language.WordComplete do
+  @moduledoc false
   def run do
     {training_data, letters} = gen_training_data
     blank_vector = NeuralNet.get_blank_vector(letters)

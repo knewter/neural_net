@@ -1,4 +1,7 @@
 defmodule LSTM do
+  @moduledoc "LSTM stands for Long Short Term Memory. An article explaining it can be found here: http://colah.github.io/posts/2015-08-Understanding-LSTMs/."
+
+  @doc "Takes an argument map with the keys :input_ids and :output_ids. Both values should be a list of component/id names for the input and output vectors (respectively)."
   use NeuralNet
 
   def template(inp, out \\ uid()) do

@@ -1,4 +1,7 @@
 defmodule GRUI do
+  @moduledoc false
+  # @moduledoc "GRUI is an experimental neural network design in development."
+
   use NeuralNet
 
   def template(inp, out \\ uid) do

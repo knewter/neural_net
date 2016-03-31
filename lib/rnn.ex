@@ -1,5 +1,7 @@
 defmodule RNN do
   @moduledoc "The classic simple recurrent neural network."
+
+  @doc "Takes an argument map with the keys :input_ids and :output_ids. Both values should be a list of component/id names for the input and output vectors (respectively)."
   use NeuralNet
 
   def template(inp, out \\ uid) do

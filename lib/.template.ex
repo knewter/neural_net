@@ -1,4 +1,6 @@
-defmodule Template do
+defmodule Template
+  @moduledoc "This template can be used to make new architectures. Copy this file, change the module name, and start adding architecture definitions in the template function."
+
   use NeuralNet
 
   def template(inp, out \\ uid()) do

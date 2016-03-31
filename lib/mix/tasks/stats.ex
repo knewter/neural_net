@@ -1,4 +1,5 @@
 defmodule Mix.Tasks.Stats do
+  @moduledoc false
   use Mix.Task
 
   def get_datum(module, learn_val, args) do
