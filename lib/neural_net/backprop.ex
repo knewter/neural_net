@@ -174,7 +174,8 @@ defmodule NeuralNet.Backprop do
   defp inject_intial_error(acc, time, exp_output) do
     output = Enum.at(acc, time).output
     {backprop_error, error_sum} = Enum.reduce(output.values, {%{}, 0}, fn {component, value}, {acc, error_sum} ->
-      difference = value - Map.fetch!(exp_output, component)
+      expected = Map.fetch!(exp_output, component)
+      difference = if expected != nil, do: value - expected, else: 0
       {Map.put(acc, component, difference), error_sum + (0.5 * :math.pow(difference, 2))}
     end)
     {update_acc(acc, time, :output, Map.put(output, :initial_error, backprop_error)), error_sum}
