@@ -6,7 +6,7 @@ defmodule GRUM do
 
   def template(inp, out \\ uid()) do
     memory = GRU.template(inp)
-    tanh [memory, inp], out
+    tanh [memory, inp], 1, out
     {memory, out}
   end
 

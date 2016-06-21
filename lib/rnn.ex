@@ -5,7 +5,7 @@ defmodule RNN do
   use NeuralNet
 
   def template(inp, out \\ uid) do
-    tanh [inp, previous(out)], out
+    tanh [inp, previous(out)], 1, out
   end
 
   defp define(args) do

@@ -77,19 +77,31 @@ defmodule NeuralNet.Helpers do
   end
 
   @doc "This allows for custom network layers using a provided `activation_function` (instead of tanh or a sigmoid). A function for caluclating the derivative at any value x must also be supplied as `activation_function_prime`."
-  def custom_net_layer(activation_function, activation_function_prime, inputs, output \\ uid) do
-    link(inputs, output)
-    add_net_layer(output, {{:net_layer, activation_function, activation_function_prime}, inputs})
+  def custom_net_layer(activation_function, activation_function_prime, inputs, layers \\ 1, output \\ uid) do
+    if is_number(layers) && layers < 1, do: raise "Error, layers cannot be an integer less than 1, got #{inspect(layers)}"
+    if layers == 1 or layers == [] do
+      link(inputs, output)
+      add_net_layer(output, {{:net_layer, activation_function, activation_function_prime}, inputs})
+    else
+      id = custom_net_layer(activation_function, activation_function_prime, inputs)
+      if is_number(layers) do
+        add_vec_grouping([id, output])
+        custom_net_layer(activation_function, activation_function_prime, [id], layers - 1, output)
+      else #is list
+        def_vec_by_size(id, hd(layers))
+        custom_net_layer(activation_function, activation_function_prime, [id], tl(layers), output)
+      end
+    end
   end
 
   @doc "A sigmoid network layer. The output vector's components will have values between 0 and 1."
-  def sigmoid(inputs, output \\ uid) do
-    custom_net_layer(&ActivationFunctions.sigmoid/1, &ActivationFunctions.sigmoid_prime/1, inputs, output)
+  def sigmoid(inputs, num_layers \\ 1, output \\ uid) do
+    custom_net_layer(&ActivationFunctions.sigmoid/1, &ActivationFunctions.sigmoid_prime/1, inputs, num_layers, output)
   end
 
   @doc "A tanh network layer. The output vector's components will have values between -1 and 1."
-  def tanh(inputs, output \\ uid) do
-    custom_net_layer(&ActivationFunctions.tanh/1, &ActivationFunctions.tanh_prime/1, inputs, output)
+  def tanh(inputs, num_layers \\ 1, output \\ uid) do
+    custom_net_layer(&ActivationFunctions.tanh/1, &ActivationFunctions.tanh_prime/1, inputs, num_layers, output)
   end
 
   @doc "This provides experimental functionality. This is sort of like a network layer, only values for weights are supplied as a vector, instead of developed through training algorithms."
