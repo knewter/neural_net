@@ -39,10 +39,17 @@ defmodule NeuralNet do
   end
 
   @doc "`train` uses backpropogation to train any neural_net. `training_data` should be a list of {inputs, expected_output} tuples, where `inputs` is a vector-across-time. `expected_output` can be either a vector representing final expected output, or it can be a list of expected outputs for every time frame. `learn_val` should be a positive constant which controls the effect of each batch. Higher values can cause faster learning, but also may introduce trouble finding a minimum error. `batch_size` specifies the number of training pairs to be run in parallel. At each training iteration, `batch_size` number of training sessions run in parallel, and the results are averaged together. Small batch sizes of 1-3 tend to work best. The `training_complete?(info)` function should take 1 argument of miscellaneous info, and return true when training should be stopped. This function can also be used for debugging or monitoring, and can print out information at regular intervals. The time (in seconds) between each call to `training_complete?(info)` is specified by the argument `completion_checking_interval`."
-  def train(net, training_data, learn_val \\ 2, batch_size \\ 1, training_complete? \\ fn info -> info.eval_time > 60 end, completion_checking_interval \\ 1) do
-    train(net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, monotonic_time() - completion_checking_interval, monotonic_time(), 1)
+  def init_train_state(net, training_data, learn_val \\ 2, batch_size \\ 1, training_complete? \\ fn info -> info.eval_time > 60 end, completion_checking_interval \\ 1) do
+    {net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, monotonic_time() - completion_checking_interval, monotonic_time(), 1}
   end
-  defp train(net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, last_check, start_time, iterations) do
+  def train(net, training_data, learn_val \\ 2, batch_size \\ 1, training_complete? \\ fn info -> info.eval_time > 60 end, completion_checking_interval \\ 1) do
+    train(init_train_state(net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval))
+  end
+  defp train(state) do
+    {continue, state} = train_step(state)
+    if continue, do: train(state), else: state
+  end
+  def train_step({net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, last_check, start_time, iterations}) do
     batch = Enum.map(1..batch_size, fn _ ->
       Task.async(fn ->
         {inputs, exp_output} = Enum.random(training_data)
@@ -87,12 +94,12 @@ defmodule NeuralNet do
     }
     if (time - last_check >= completion_checking_interval) do
       if training_complete?.(info) do
-        {net, info}
+        {false, {net, info}}
       else
-        train(net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, time, start_time, iterations + 1)
+        {true, {net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, time, start_time, iterations + 1}}
       end
     else
-      train(net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, last_check, start_time, iterations + 1)
+      {true, {net, training_data, learn_val, batch_size, training_complete?, completion_checking_interval, last_check, start_time, iterations + 1}}
     end
   end
 
