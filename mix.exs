@@ -15,6 +15,11 @@ defmodule NeuralNet.Mixfile do
      docs: [main: NeuralNet]]
   end
 
+  def application do
+    [applications: [:logger],
+     mod: {TrainerManager.App, []}]
+  end
+
   def deps do
     [
       {:earmark, "~> 0.1", only: :dev},
